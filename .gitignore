@@ -7,3 +7,4 @@ boilerplates
 logs/*
 tmp/
 tmp/*
+build/
