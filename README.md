@@ -25,10 +25,9 @@ The tool will process all files in the specified directory, generate hash files 
 ## Install
 You can run ftreetrawl by cloning the repository and running the script directly with Python 3.x or you can use binary executables provided in the releases section. 
 
+## Final Remarks
+The concept of ftreetrawl is inspired by dtreetrawlby. However, ftreetrawl is designed to be simpler and more efficient, making it ideal for frequently generating SHA hashes for an entire directory.
+
 ## License
 ftreetrawl is available under the MIT License. See LICENSE for more details.
 
-## Last Words
-FtreeTrawl is based on dtreetrawl by [Derek Chafin](
-
-This Markdown text can be placed in a README.md file in the root of your project repository. It provides a brief description of the tool, its usage, requirements, and license information.
