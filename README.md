@@ -17,8 +17,14 @@ python ftreetrawl.py <directory>
 You can also disable caching with the `--no-cache` option:
 
 ```bash
-python ftreetrawl.py --no-casche <directory> 
+python ftreetrawl.py --no-cache <directory> 
 ```
+
+Also there's a `--threads` option to specify the number of threads to use for processing files:
+```bash
+python ftreetrawl.py --threads <number> <directory>
+```
+By default, `ftreetrawl` uses as much threads as the number of CPU cores available.
 
 ## Install
 You can run ftreetrawl by cloning the repository and running the script directly with Python 3.x or you can use binary executables provided in the releases section.
