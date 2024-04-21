@@ -8,13 +8,19 @@ import xxhash
 
 HASH_EXTENSION = '.ftt-hash-sha1'
 CACHE_DIR = os.path.join(pathlib.Path.home(), '.cache', 'ftreetrawl')
+CHUNK_SIZE = 512 * 1024 * 1024  # 512MB
 
 def calculate_sha1(file_path: str, mtime: float) -> str:
     """Calculate the SHA1 hash of a file."""
+    file_hash = xxhash.xxh3_64()
+
     with open(file_path, 'rb') as file:
-        file_hash = xxhash.xxh3_64_hexdigest(file.read())
-        mtime_hash = xxhash.xxh3_64_hexdigest(str(mtime).encode())
-        return xxhash.xxh3_64_hexdigest((file_hash + mtime_hash).encode())
+        while chunk := file.read(CHUNK_SIZE):
+            file_hash.update(chunk)
+
+    mtime_hash = xxhash.xxh3_64_hexdigest(str(mtime).encode())
+    return xxhash.xxh3_64_hexdigest((file_hash.hexdigest() + mtime_hash).encode())
+
     
 def hash_files(directory: str) -> str:
     """Process all files in a directory."""
