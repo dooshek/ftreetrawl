@@ -22,7 +22,7 @@ def calculate_sha1(file_path: str, mtime: float) -> str:
     return xxhash.xxh3_64_hexdigest((file_hash.hexdigest() + mtime_hash).encode())
 
     
-def hash_files(directory: str) -> str:
+def hash_files(directory: str, no_cache: bool) -> str:
     """Process all files in a directory."""
     all_hashes = []
 
@@ -37,7 +37,7 @@ def hash_files(directory: str) -> str:
             os.makedirs(os.path.dirname(hash_file_path), exist_ok=True)
             mtime = os.path.getmtime(file_path)
 
-            if not os.path.exists(hash_file_path):
+            if not os.path.exists(hash_file_path) or no_cache:
                 sha1 = calculate_sha1(file_path, mtime)
                 with open(hash_file_path, 'w', encoding="utf-8") as hash_file:
                     json.dump({'sha1': sha1, 'mtime': mtime}, hash_file)
@@ -76,8 +76,9 @@ parser = argparse.ArgumentParser(description="Hash files in a directory, recursi
                                  "Also removes orphaned hash files if original files were removed."
                                 )
 parser.add_argument('directory', type=str, help='The directory to process')
+parser.add_argument('--no-cache', action='store_true', help=f'Disable caching to {CACHE_DIR}')
 
 args = parser.parse_args()
 
 hash_cleanup(args.directory)
-print(hash_files(args.directory))
+print(hash_files(args.directory, args.no_cache))
