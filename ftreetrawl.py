@@ -1,9 +1,10 @@
 """Hash files in a directory, recursively and return the global hash for all files in a directory."""
 import argparse
-import hashlib
 import json
 import os
 import pathlib
+
+import xxhash
 
 HASH_EXTENSION = '.ftt-hash-sha1'
 CACHE_DIR = os.path.join(pathlib.Path.home(), '.cache', 'ftreetrawl')
@@ -11,9 +12,9 @@ CACHE_DIR = os.path.join(pathlib.Path.home(), '.cache', 'ftreetrawl')
 def calculate_sha1(file_path: str, mtime: float) -> str:
     """Calculate the SHA1 hash of a file."""
     with open(file_path, 'rb') as file:
-        file_hash = hashlib.sha1(file.read()).hexdigest()
-        mtime_hash = hashlib.sha1(str(mtime).encode()).hexdigest()
-        return hashlib.sha1((file_hash + mtime_hash).encode()).hexdigest()
+        file_hash = xxhash.xxh3_64_hexdigest(file.read())
+        mtime_hash = xxhash.xxh3_64_hexdigest(str(mtime).encode())
+        return xxhash.xxh3_64_hexdigest((file_hash + mtime_hash).encode())
     
 def hash_files(directory: str) -> str:
     """Process all files in a directory."""
@@ -45,7 +46,7 @@ def hash_files(directory: str) -> str:
                     sha1 = data['sha1']
             all_hashes.append(sha1)
 
-    global_hash = hashlib.sha1(''.join(all_hashes).encode()).hexdigest()
+    global_hash = xxhash.xxh3_64_hexdigest(''.join(all_hashes).encode())
     return global_hash
 
 def hash_cleanup(directory: str):
