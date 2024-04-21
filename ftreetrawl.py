@@ -1,14 +1,20 @@
+"""Hash files in a directory, recursively and return the global hash for all files in a directory."""
 import argparse
 import hashlib
+import json
 import os
+import pathlib
 
 HASH_EXTENSION = '.ftt-hash-sha1'
+CACHE_DIR = os.path.join(pathlib.Path.home(), '.cache', 'ftreetrawl')
 
-def calculate_sha1(file_path: str) -> str:
+def calculate_sha1(file_path: str, mtime: float) -> str:
     """Calculate the SHA1 hash of a file."""
     with open(file_path, 'rb') as file:
-        return hashlib.sha1(file.read()).hexdigest()
-
+        file_hash = hashlib.sha1(file.read()).hexdigest()
+        mtime_hash = hashlib.sha1(str(mtime).encode()).hexdigest()
+        return hashlib.sha1((file_hash + mtime_hash).encode()).hexdigest()
+    
 def hash_files(directory: str) -> str:
     """Process all files in a directory."""
     all_hashes = []
@@ -17,28 +23,44 @@ def hash_files(directory: str) -> str:
         for file in files:
             if file.endswith(HASH_EXTENSION):
                 continue
+
             file_path = os.path.join(root, file)
-            hash_file_path = f"{file_path}{HASH_EXTENSION}"
+            absolute_path = os.path.abspath(file_path)[1:]
+            hash_file_path = os.path.join(CACHE_DIR, f"{absolute_path}{HASH_EXTENSION}")
+            os.makedirs(os.path.dirname(hash_file_path), exist_ok=True)
+            mtime = os.path.getmtime(file_path)
+
             if not os.path.exists(hash_file_path):
-                sha1 = calculate_sha1(file_path)
+                sha1 = calculate_sha1(file_path, mtime)
                 with open(hash_file_path, 'w', encoding="utf-8") as hash_file:
-                    hash_file.write(sha1)
+                    json.dump({'sha1': sha1, 'mtime': mtime}, hash_file)
             else:
                 with open(hash_file_path, 'r', encoding="utf-8") as hash_file:
-                    sha1 = hash_file.read()
+                    data = json.load(hash_file)
+                if data['mtime'] != mtime:
+                    sha1 = calculate_sha1(file_path, mtime)
+                    with open(hash_file_path, 'w', encoding="utf-8") as hash_file:
+                        json.dump({'sha1': sha1, 'mtime': mtime}, hash_file)
+                else:
+                    sha1 = data['sha1']
             all_hashes.append(sha1)
 
     global_hash = hashlib.sha1(''.join(all_hashes).encode()).hexdigest()
     return global_hash
 
-def hash_cleanup(directory):
+def hash_cleanup(directory: str):
     """Remove orphaned hash files in a directory."""
-    for root, dirs, files in os.walk(directory):
+    cwd_rel = os.getcwd()[1:]
+    cache_dir = os.path.join(CACHE_DIR, cwd_rel, directory)
+    
+    for root, dirs, files in os.walk(cache_dir):
         for file in files:
-            if file.endswith(HASH_EXTENSION):
-                original_file_path = os.path.join(root, file[:-len(HASH_EXTENSION)])
-                if not os.path.exists(original_file_path):
-                    os.remove(os.path.join(root, file))
+            if not file.endswith(HASH_EXTENSION):
+                continue
+            original_base_dir_abs = root.replace(CACHE_DIR, '')
+            original_file_path = os.path.join(original_base_dir_abs, file[:-len(HASH_EXTENSION)])
+            if not os.path.exists(original_file_path):
+                os.remove(os.path.join(root, file))
 
 parser = argparse.ArgumentParser(description="Hash files in a directory, recursively and " +
                                  "return the global hash for all files in a directory.\n" +
